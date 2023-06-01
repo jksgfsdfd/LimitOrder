@@ -6,21 +6,21 @@ function getStringKeccakHash(item: string): string {
 }
 
 let NormalOrder = `struct NormalOrder {
-  address seller;
-  address buyer;
-  address sellToken;
-  address buyToken;
-  uint256 sellAmount;
-  uint256 buyAmount;
+  address maker;
+  address taker;
+  address makerToken;
+  address takerToken;
+  uint256 makerAmount;
+  uint256 takerAmount;
   uint256 expiry;
 }`;
 
 let MultiAssetOrder = `struct MultiAssetOrder {
-  address seller;
-  address buyer;
-  address sellToken;
-  uint256 sellAmount;
-  bytes32 buyAssetMixHash;
+  address maker;
+  address taker;
+  address makerToken;
+  uint256 makerAmount;
+  bytes32 takerAssetMixHash;
   uint256 expiry;
 }`;
 
