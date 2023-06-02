@@ -119,8 +119,8 @@ export class MultiAssetOrder {
     { type: "address", name: "maker" },
     { type: "address", name: "taker" },
     { type: "address", name: "makerToken" },
-    { type: "string", name: "takerAssetMixHash" },
     { type: "uint256", name: "makerAmount" },
+    { type: "bytes32", name: "takerAssetMixHash" },
     { type: "uint256", name: "expiry" },
   ];
 
@@ -194,7 +194,7 @@ export class MultiAssetOrder {
       )
     );
 
-    return this.merkleTree.getProof(takerAssetHash);
+    return this.merkleTree.getHexProof(takerAssetHash);
   }
 
   static getSortedTakerAssetHashes(

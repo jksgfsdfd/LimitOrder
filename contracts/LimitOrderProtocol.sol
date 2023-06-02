@@ -108,8 +108,8 @@ contract LimitOrderProtocol is ILimitOrderProtocol {
             msg.sender,
             order.makerToken,
             order.takerToken,
-            fillingAmount,
-            ordermakerAmount
+            ordermakerAmount,
+            fillingAmount
         );
 
         return (ordermakerAmount, fillingAmount);
@@ -155,7 +155,6 @@ contract LimitOrderProtocol is ILimitOrderProtocol {
             revert InvalidSignature();
         }
 
-        // stack too deep
         {
             bytes32 buyAssetHash = keccak256(
                 abi.encodePacked(
