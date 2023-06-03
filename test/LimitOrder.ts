@@ -1,10 +1,6 @@
-import {
-  loadFixture,
-  takeSnapshot,
-} from "@nomicfoundation/hardhat-network-helpers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
-import { type } from "os";
 import { MultiAssetOrder, NormalOrder } from "../utils";
 import { limitOrderDeployedFixture } from "./shared/fixtures";
 
@@ -14,7 +10,6 @@ describe("Limit Order", function () {
       const { token1, token2, token3, limitOrder } = await loadFixture(
         limitOrderDeployedFixture
       );
-
       const [maker, taker] = await ethers.getSigners();
       const makerToken = token1;
       const takerToken = token2;
@@ -291,6 +286,76 @@ describe("Limit Order", function () {
           ethers.utils.parseEther("1800"),
           fillAmount2
         );
+    });
+
+    it("reverts on attempting a fill with an invalid proof", async () => {
+      const { token1, token2, token3, limitOrder } = await loadFixture(
+        limitOrderDeployedFixture
+      );
+
+      const [maker, taker] = await ethers.getSigners();
+      const makerToken = token1;
+      const takerToken1 = token2;
+      const takerToken2 = token3;
+      const makerAmount = ethers.utils.parseEther("3600");
+      const takerAmount1 = ethers.utils.parseEther("2");
+      const takerAmount2 = ethers.utils.parseEther("720");
+      const multiAssetOrder = new MultiAssetOrder(
+        {
+          maker: maker.address,
+          makerToken: makerToken.address,
+          makerAmount: makerAmount,
+        },
+        [
+          { address: takerToken1.address, amount: takerAmount1 },
+          { address: takerToken2.address, amount: takerAmount2 },
+        ],
+        limitOrder.address,
+        network.config.chainId
+      );
+
+      const typedData = multiAssetOrder.getEIP712TypedData();
+      const joinedSig = await maker._signTypedData(
+        typedData.domain,
+        typedData.types,
+        typedData.message
+      );
+      const { v, r, s } = ethers.utils.splitSignature(joinedSig);
+      const signature = { v, r, s };
+
+      // set balances and approvals
+      const mintMakerTokenTx = await makerToken
+        .connect(maker)
+        .mint(maker.address, ethers.utils.parseEther("10000"));
+      await mintMakerTokenTx.wait();
+
+      const approveMakerTokenTx = await makerToken
+        .connect(maker)
+        .approve(limitOrder.address, ethers.constants.MaxUint256);
+      await approveMakerTokenTx.wait();
+
+      const mintInvalidTokenTx = await token3
+        .connect(taker)
+        .mint(taker.address, ethers.utils.parseEther("10000"));
+      await mintInvalidTokenTx.wait();
+
+      const approveInvalidTokenTx = await token3
+        .connect(taker)
+        .approve(limitOrder.address, ethers.constants.MaxUint256);
+      await approveInvalidTokenTx.wait();
+
+      const fillAmount = ethers.utils.parseEther("1");
+      const fakeProof = multiAssetOrder.getTakerAssetProof(takerToken1.address);
+      await expect(
+        limitOrder
+          .connect(taker)
+          .fillMultiAssetOrder(multiAssetOrder, signature, {
+            fillToken: token3.address,
+            fillAmount: fillAmount,
+            fillTokenOrderAmount: takerAmount1,
+            proof: fakeProof,
+          })
+      ).to.be.revertedWithCustomError(limitOrder, "InvalidBuyAsset");
     });
   });
 });

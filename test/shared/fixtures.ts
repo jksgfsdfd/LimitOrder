@@ -1,6 +1,7 @@
 import { writeFileSync } from "fs";
 import { ethers } from "hardhat";
 import deployments from "../../deployments.json";
+import { LimitOrderProtocol } from "../../typechain-types";
 
 export async function tokensDeployedFixture() {
   const signers = await ethers.getSigners();
@@ -28,14 +29,25 @@ export async function limitOrderDeployedFixture() {
     signers[0]
   );
 
-  const limitOrder = await limitOrderFactory.deploy();
+  const limitOrderImplementation = await limitOrderFactory.deploy();
+  const limitOrderProxyFactory = await ethers.getContractFactory(
+    "LimitOrderProxy",
+    signers[0]
+  );
+  const limitOrderProxy = await limitOrderProxyFactory.deploy(
+    limitOrderImplementation.address
+  );
+  const limitOrderInteraction = await ethers.getContractAt(
+    "LimitOrderProtocol",
+    limitOrderProxy.address
+  );
   const newDeployments: any = deployments;
-  newDeployments["LimitOrderProtocol"] = limitOrder.address;
+  newDeployments["LimitOrderProtocol"] = limitOrderProxy.address;
   writeFileSync("deployments.json", JSON.stringify(newDeployments));
   return {
     token1,
     token2,
     token3,
-    limitOrder,
+    limitOrder: limitOrderInteraction,
   };
 }

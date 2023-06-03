@@ -30,6 +30,8 @@ interface ILimitOrderProtocol {
         uint256 takerAmountFilled
     );
 
+    function initializeV1(address implementation) external ;
+
     function fillNormalOrder(
         LibOrder.NormalOrder calldata,
         LibSig.Signature calldata,
